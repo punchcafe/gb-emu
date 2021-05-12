@@ -18,9 +18,13 @@ public class AddressBusTest {
         final var addressBus = new AddressBus(addressables);
         assertNotEquals(ramBlockOne.read(0), 0xaa);
         assertNotEquals(ramBlockTwo.read(6), 0xa1);
+        assertNotEquals(addressBus.read(6), 0xaa);
+        assertNotEquals(addressBus.read(16), 0xa1);
         addressBus.write(0, (byte) 0xaa);
         addressBus.write(16, (byte) 0xa1);
         assertEquals(ramBlockOne.read(0), (byte) 0xaa);
         assertEquals(ramBlockTwo.read(6), (byte) 0xa1);
+        assertEquals(addressBus.read(0), (byte) 0xaa);
+        assertEquals(addressBus.read(16), (byte) 0xa1);
     }
 }

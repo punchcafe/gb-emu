@@ -5,43 +5,49 @@ import java.util.List;
 
 public class AddressBus {
 
-    // an array of entire array of all memory map addresses to their relative Addressable handler
-    private OffsetAddressable[] offsetAddressables;
+    private OffsetAddressable[] offsetAddressableByAddress;
 
-    /**
-     *
-     * @param addressables an ordered list of all all the adressable blocks
-     */
     public AddressBus(final List<Addressable> addressables){
-        // TODO: extract into methods
-        final int totalSize = addressables.stream()
+        final int totalAdressSpaceSize = getTotalAdressSpaceSize(addressables);
+        final List<OffsetAddressable> offsetAddressables = buildOffsetAddressablesFromAddressables(addressables);
+        this.offsetAddressableByAddress = buildRandomAccessAddressableLookup(offsetAddressables, totalAdressSpaceSize);
+    }
+
+    public byte read(int address){
+        return this.offsetAddressableByAddress[address].read(address);
+    }
+
+    public void write(int address, byte value){
+        this.offsetAddressableByAddress[address].write(address, value);
+    }
+
+    private int getTotalAdressSpaceSize(final List<Addressable> addressables){
+        return addressables.stream()
                 .map(Addressable::addressSpaceSize)
                 .reduce(Integer::sum)
                 .orElse(0);
+    }
+
+    private List<OffsetAddressable> buildOffsetAddressablesFromAddressables(final List<Addressable> addressables){
         int offset = 0;
         final List<OffsetAddressable> offsetAddressables = new ArrayList<>();
         for(Addressable addressable : addressables){
             offsetAddressables.add(new OffsetAddressable(offset, addressable));
             offset += addressable.addressSpaceSize();
         }
+        return offsetAddressables;
+    }
 
-        this.offsetAddressables = new OffsetAddressable[totalSize];
+    private OffsetAddressable[] buildRandomAccessAddressableLookup(final List<OffsetAddressable> offsetAddressables,
+                                                                   final int totalAdressSpaceSize){
+        final OffsetAddressable[] lookupArray = new OffsetAddressable[totalAdressSpaceSize];
         for(OffsetAddressable offsetAddressable : offsetAddressables){
             for(int i = offsetAddressable.getOffset();
                 i < offsetAddressable.getAddressable().addressSpaceSize() + offsetAddressable.getOffset();
                 i++){
-                this.offsetAddressables[i] = offsetAddressable;
+                lookupArray[i] = offsetAddressable;
             }
         }
-    }
-
-    public byte read(int address){
-        final var offsetAddressable = this.offsetAddressables[address];
-        return offsetAddressable.getAddressable().read(address - offsetAddressable.getOffset());
-    }
-
-    public void write(int address, byte value){
-        final var offsetAddressable = this.offsetAddressables[address];
-        offsetAddressable.getAddressable().write(address - offsetAddressable.getOffset(), value);
+        return lookupArray;
     }
 }
